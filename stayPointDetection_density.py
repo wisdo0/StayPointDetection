@@ -16,7 +16,7 @@ from math import radians, cos, sin, asin, sqrt
 import folium
 import webbrowser
 
-time_format = '%Y-%m-%d,%H:%M:%S'
+time_format = '%Y-%m-%d %H:%M:%S'
 
 # structure of point
 class Point:
@@ -113,26 +113,26 @@ def parseGeoTxt(lines):
     points = []
     for line in lines:
         field_pointi = line.rstrip().split(',')
-        latitude = float(field_pointi[0])
-        longitude = float(field_pointi[1])
-        dateTime = field_pointi[-2]+','+field_pointi[-1]
+        latitude = float(field_pointi[2])
+        longitude = float(field_pointi[3])
+        dateTime = field_pointi[0]
         points.append(Point(latitude, longitude, dateTime, 0, 0))
     return points
 
 def main():
-    m = folium.Map(location=[40.007814,116.319764])
+    m = folium.Map(location=[41.908,12.504])
     mapDots = folium.map.FeatureGroup()
 
     count = 0
-    for dirname, dirnames, filenames in os.walk(sys.path[0] + '/Data'):
+    for dirname, dirnames, filenames in os.walk(r"C:\Users\wisdo\Documents\gis\rome_project\rome_each"):
         filenum = len(filenames)
         print(filenum , "files found")
         for filename in filenames:
-            if  filename.endswith('plt'):
+            if  filename.endswith('csv'):
                 gpsfile = os.path.join(dirname, filename)
                 print("processing:" ,  gpsfile) 
                 log = open(gpsfile, 'r')
-                lines = log.readlines()[6:] # first 6 lines are useless
+                lines = log.readlines()[1:] # first 6 lines are useless
                 points = parseGeoTxt(lines)
                 stayPointCenter, stayPoint = stayPointExtraction(points)
                 addPoints(mapDots, points, "yellow")
