@@ -15,7 +15,7 @@ from math import radians, cos, sin, asin, sqrt
 import folium
 import webbrowser
 
-time_format = '%Y-%m-%d,%H:%M:%S'
+time_format = '%Y-%m-%d %H:%M:%S'
 
 # structure of point
 class Point:
@@ -58,7 +58,7 @@ def computMeanCoord(gpsPoints):
 #        distThres: distance threshold
 #        timeThres: time span threshold
 # default values of distThres and timeThres are 200 m and 30 min respectively, according to [1]
-def stayPointExtraction(points, distThres=200, timeThres=30 * 60):
+def stayPointExtraction(points, distThres=200, timeThres=3 * 60):
     stayPointList = []
     stayPointCenterList = []
     pointNum = len(points)
@@ -85,9 +85,9 @@ def parseGeoTxt(lines):
     points = []
     for line in lines:
         field_pointi = line.rstrip().split(',')
-        latitude = float(field_pointi[0])
-        longitude = float(field_pointi[1])
-        dateTime = field_pointi[-2] + ',' + field_pointi[-1]
+        latitude = float(field_pointi[2])
+        longitude = float(field_pointi[3])
+        dateTime = field_pointi[0][0:19]
         points.append(Point(latitude, longitude, dateTime, 0, 0))
     return points
 
@@ -102,20 +102,20 @@ def addPoints(mapDots, points, color):
             ))
 
 def main():
-    m = folium.Map(location=[40.007814,116.319764])
+    m = folium.Map(location=[41.908,12.504])
     tooltip = "hello"
     mapDots = folium.map.FeatureGroup()
 
-    for dirname, dirnames, filenames in os.walk(sys.path[0] + '/Data'):
+    for dirname, dirnames, filenames in os.walk(r"C:\Users\wisdo\Documents\gis\rome_project\rome_each"):
         filenum = len(filenames)
         print(filenum , "files found")
         count = 0
         for filename in filenames:
-            if  filename.endswith('plt'):
+            if  filename.endswith('csv'):
                 gpsfile = os.path.join(dirname, filename)
                 print("processing:" ,  gpsfile) 
                 log = open(gpsfile, 'r')
-                lines = log.readlines()[6:] # first 6 lines are useless
+                lines = log.readlines()[1:] # first 6 lines are useless
                 points = parseGeoTxt(lines)
                 stayPointCenter, stayPoint = stayPointExtraction(points)
                 addPoints(mapDots, points, 'yellow')
@@ -126,24 +126,26 @@ def main():
                     addPoints(mapDots, stayPointCenter, 'red')
 
                     # writen into file ./StayPoint/*.plt
-                    spfile = gpsfile.replace('Data', 'StayPoint').replace('.plt', '_basic.plt')
+                    spfile = gpsfile.replace('gis', 'StayPoint').replace('.csv', '_basic.csv')
                     if not os.path.exists(os.path.dirname(spfile)):
                         os.makedirs(os.path.dirname(spfile))
                     spfile_handle = open(spfile, 'w+')
-                    print('Extracted stay points:\nlaltitude\tlongitude\tarriving time\tleaving time', file=spfile_handle)
+                    print('laltitude,longitude,arriving time,leaving time',file=spfile_handle)
                     for sp in stayPointCenter:
-                        print(sp.latitude, sp.longitude, time.strftime(time_format, time.localtime(sp.arriveTime)), time.strftime(time_format, time.localtime(sp.leaveTime)), file=spfile_handle)
+                        print(sp.latitude, sp.longitude, time.strftime(time_format, time.localtime(sp.arriveTime)), time.strftime(time_format, time.localtime(sp.leaveTime)), sep=',', file=spfile_handle)
                     spfile_handle.close()
 
                     print("writen into:" ,  spfile) 
                     count += 1
                 else:
                     print(gpsfile , "has no stay point")
+            if count>1000:
+                break
         print(count, "out of" , filenum , "files contain stay points")
 
     # show stay points on map
     m.add_child(mapDots)
-    m.save(sys.path[0] + "/index1.html")
-    webbrowser.open(sys.path[0] + "/index1.html")
+    m.save(sys.path[0] + "/index_basic.html")
+    # webbrowser.open(sys.path[0] + "/index_basic.html")
 if __name__ == '__main__':
     main()

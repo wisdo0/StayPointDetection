@@ -15,6 +15,9 @@ import sys
 from math import radians, cos, sin, asin, sqrt
 import folium
 import webbrowser
+import pyemd as emd
+import pandas as pd
+import numpy as np
 
 time_format = '%Y-%m-%d %H:%M:%S'
 
@@ -59,7 +62,7 @@ def computMeanCoord(gpsPoints):
 #        distThres: distance threshold
 #        timeThres: time span threshold
 # default values of distThres and timeThres are 200 m and 30 min respectively, according to [1]
-def stayPointExtraction(points, distThres = 200, timeThres = 30*60):
+def stayPointExtraction(points, distThres = 200, timeThres = 2*60):
     stayPointCenterList= []
     stayPointList = []
     pointNum = len(points)
@@ -115,7 +118,7 @@ def parseGeoTxt(lines):
         field_pointi = line.rstrip().split(',')
         latitude = float(field_pointi[2])
         longitude = float(field_pointi[3])
-        dateTime = field_pointi[0]
+        dateTime = field_pointi[0][0:19]
         points.append(Point(latitude, longitude, dateTime, 0, 0))
     return points
 
@@ -128,7 +131,7 @@ def main():
         filenum = len(filenames)
         print(filenum , "files found")
         for filename in filenames:
-            if  filename.endswith('csv'):
+            if  filename.endswith('a2_1.csv'):
                 gpsfile = os.path.join(dirname, filename)
                 print("processing:" ,  gpsfile) 
                 log = open(gpsfile, 'r')
@@ -143,13 +146,13 @@ def main():
                     addPoints(mapDots, stayPointCenter, "red")
 
                     # writen into file ./StayPoint/*.plt
-                    spfile = gpsfile.replace('Data', 'StayPoint').replace('.plt', '_density.plt')
+                    spfile = gpsfile.replace('gis', 'StayPoint').replace('.csv', '_density.csv')
                     if not os.path.exists(os.path.dirname(spfile)):
                         os.makedirs(os.path.dirname(spfile))
                     spfile_handle = open(spfile, 'w+')
-                    print('Extracted stay points:\nlaltitude\tlongitude\tarriving time\tleaving time', file=spfile_handle)
+                    print('laltitude,longitude,arriving time,leaving time',file=spfile_handle)
                     for sp in stayPointCenter:
-                        print(sp.latitude, sp.longitude, time.strftime(time_format, time.localtime(sp.arriveTime)), time.strftime(time_format, time.localtime(sp.leaveTime)), file=spfile_handle)
+                        print(sp.latitude, sp.longitude, time.strftime(time_format, time.localtime(sp.arriveTime)), time.strftime(time_format, time.localtime(sp.leaveTime)), sep=',', file=spfile_handle)
                     spfile_handle.close()
 
                     print("writen into:" ,  spfile) 
@@ -162,5 +165,6 @@ def main():
     m.add_child(mapDots)
     m.save(sys.path[0] + "/index2.html")
     webbrowser.open(sys.path[0] + "/index2.html")
+
 if __name__ == '__main__':
     main()
